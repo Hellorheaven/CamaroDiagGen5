@@ -116,8 +116,7 @@ class BluetoothObdManager(context: Context) {
         val inp = inputStream ?: return@withContext "NO_SOCKET"
 
         while (inp.available() > 0) inp.read()
-        out.write((command.trim() + "
-").toByteArray(Charsets.US_ASCII))
+        out.write((command.trim() + "\r").toByteArray(Charsets.US_ASCII))
         out.flush()
 
         val buffer = StringBuilder()
@@ -132,10 +131,8 @@ class BluetoothObdManager(context: Context) {
             }
         }
         buffer.toString()
-            .replace("
-", " ")
-            .replace("
-", " ")
+            .replace("\r", " ")
+            .replace("\n", " ")
             .replace(command, "")
             .trim()
     }
