@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.camarodiag.gen5"
-    compileSdk = 37 // Android 17
+    compileSdk = 36 // Android 16
 
     defaultConfig {
         applicationId = "com.camarodiag.gen5"
         minSdk = 29     // Android 10
-        targetSdk = 37  // Android 17
+        targetSdk = 36  // Android 16
         versionCode = 1
         versionName = "1.0.0"
 
