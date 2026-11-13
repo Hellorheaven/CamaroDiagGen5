@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 
-// ViewModel interne pour éviter toute erreur d'import manquant
 class MainViewModel : ViewModel() {
     val vehicleStatus: String = "Connecté - Prêt pour diagnostic UDS"
 }
@@ -133,7 +132,7 @@ fun DashboardContent(viewModel: MainViewModel) {
 }
 
 @Composable
-fn DiagnosticsContent() {
+fun DiagnosticsContent() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = "Module de lecture des codes défauts (DTC)")
     }
