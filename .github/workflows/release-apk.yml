@@ -3,22 +3,25 @@ name: Release APKs to GitHub Releases
 on:
   workflow_dispatch:
     inputs:
-      tag_name:
-        description: 'Nom du tag de la release (ex: v1.0.0)'
+      version_prefix:
+        description: 'Version majeure et mineure (ex: v1.0)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.0'
   push:
-    tags:
-      - 'v*' # Déclenche automatiquement le build et la release dès qu'un tag du type v1.0.0 est poussé
+    branches:
+      - main # Se déclenche automatiquement à chaque push validé sur main
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Indispensable pour autoriser GitHub Actions à créer une release et y attacher des fichiers
+      contents: write # Indispensable pour créer une release et modifier les tags du dépôt
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Nécessaire pour récupérer l'historique des tags existants
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -56,14 +59,50 @@ jobs:
           ./gradlew app:assembleDebug --stacktrace
           ./gradlew app:assembleRelease --stacktrace
 
-      - name: Determine Tag Name
+      - name: Generate Automatic or Manual Version Tag
         id: tag
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+            # Mode manuel : Utilise le préfixe saisi (ex: v1.0) et cherche le dernier patch ou met .0
+            PREFIX="${{ github.event.inputs.version_prefix }}"
+            # Nettoie le préfixe si l'utilisateur a mis un 'v' ou non
+            PREFIX_CLEAN=$(echo "$PREFIX" | sed 's/^v//')
+            
+            # Trouve le dernier numéro de patch pour ce préfixe
+            LAST_PATCH=$(git tag -l "v${PREFIX_CLEAN}.*" | sed "s/v${PREFIX_CLEAN}\.//" | sort -n | tail -n 1)
+            if [ -z "$LAST_PATCH" ]; then
+              NEXT_PATCH=0
+            else
+              NEXT_PATCH=$((LAST_PATCH + 1))
+            fi
+            TAG_NAME="v${PREFIX_CLEAN}.${NEXT_PATCH}"
+            echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+            
           else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            # Mode automatique (sur push main) : Incrémente automatiquement le dernier tag v1.0.Y existant
+            LAST_TAG=$(git describe --tags --match "v1.0.*" --abbrev=0 2>/dev/null || echo "v1.0.0")
+            echo "Dernier tag détecté : $LAST_TAG"
+            
+            # Extraction de la partie patch (Y)
+            PREFIX=$(echo "$LAST_TAG" | cut -d. -f1-2) # ex: v1.0
+            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)     # ex: 5
+            
+            if [ -z "$PATCH" ]; then
+              NEXT_PATCH=1
+            else
+              NEXT_PATCH=$((PATCH + 1))
+            fi
+            
+            TAG_NAME="${PREFIX}.${NEXT_PATCH}"
+            echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
           fi
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
 
       - name: Publish Release and Upload APKs
         uses: softprops/action-gh-release@v2
@@ -72,9 +111,9 @@ jobs:
           name: "CamaroDiag Gen5 - Release ${{ steps.tag.outputs.tag }}"
           body: |
             ## 🚗 CamaroDiag Gen5
-            Build automatisé pour les diagnostics OBD-II UDS (2010-2015 Chevrolet Camaro).
-            - **APK Debug** : Version de test et de diagnostic avec logs complets.
-            - **APK Release** : Version de production signée et optimisée.
+            - **Version** : `${{ steps.tag.outputs.tag }}`
+            - **Type de build** : Automatisé / Signé
+            - **APK Debug & Release** disponibles ci-dessous.
           files: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
