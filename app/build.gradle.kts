@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application") version "8.5.2"
+    id("com.android.application") version "8.5.0"
     id("org.jetbrains.kotlin.android") version "2.0.21"
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
@@ -38,7 +38,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            debuggable = true
+            isDebuggable = true
         }
     }
 
@@ -77,3 +77,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
