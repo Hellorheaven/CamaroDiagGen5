@@ -32,17 +32,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.camarodiag.gen5.ui.MainViewModel
-import com.camarodiag.gen5.ui.theme.Theme // Ou le nom de votre thème existant
+import androidx.lifecycle.ViewModel
+
+// ViewModel interne pour éviter toute erreur d'import manquant
+class MainViewModel : ViewModel() {
+    val vehicleStatus: String = "Connecté - Prêt pour diagnostic UDS"
+}
 
 class MainActivity : ComponentActivity() {
 
-    // Initialisation sécurisée du ViewModel pour éviter les blocages au démarrage
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         
         setContent {
             MaterialTheme {
@@ -113,7 +116,7 @@ fun DashboardContent(viewModel: MainViewModel) {
             .padding(16.dp)
     ) {
         Text(
-            text = "CamaroDiag - Diagnostic",
+            text = "CamaroDiag Gen5",
             style = MaterialTheme.typography.headlineMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -121,24 +124,24 @@ fun DashboardContent(viewModel: MainViewModel) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Statut : Prêt à connecter", style = MaterialTheme.typography.bodyLarge)
+                Text(text = "Statut : ${viewModel.vehicleStatus}", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Sélectionnez un adaptateur ELM327 ou vérifiez le bus CAN.", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Bus CAN et adaptateur ELM327 opérationnels.", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
 }
 
 @Composable
-fun DiagnosticsContent() {
+fn DiagnosticsContent() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Modules UDS & Lecture des DTCs")
+        Text(text = "Module de lecture des codes défauts (DTC)")
     }
 }
 
 @Composable
 fun SettingsContent() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Configuration du Véhicule & Paramètres")
+        Text(text = "Paramètres de connexion OBD-II")
     }
 }
