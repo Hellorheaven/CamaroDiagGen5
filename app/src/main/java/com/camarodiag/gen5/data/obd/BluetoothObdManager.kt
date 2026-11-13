@@ -47,7 +47,7 @@ class BluetoothObdManager(context: Context) {
                 ?: return@withContext Result.failure(IllegalStateException("Bluetooth adapter unavailable"))
 
             val btSocket = device.createRfcommSocketToServiceRecord(sppUuid)
-            bluetoothAdapter?.let { it.cancelDiscovery() }
+            bluetoothAdapter.cancelDiscovery()
             btSocket.connect()
 
             socket = btSocket
