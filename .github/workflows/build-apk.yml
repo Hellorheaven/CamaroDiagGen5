@@ -1,4 +1,4 @@
-name: Build CamaroDiagGen5 Android APK
+name: Build CamaroDiagGen5 APKs (Debug & Release)
 
 on:
   workflow_dispatch:
@@ -33,11 +33,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build Debug APK
-        run: gradle app:assembleDebug --stacktrace
+      - name: Build Debug & Release APKs
+        run: |
+          gradle app:assembleDebug --stacktrace
+          gradle app:assembleRelease --stacktrace
 
-      - name: Upload Debug APK Artifact
+      - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CamaroDiagGen5-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: CamaroDiagGen5-APKs
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
