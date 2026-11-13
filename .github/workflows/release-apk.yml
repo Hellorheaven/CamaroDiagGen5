@@ -1,0 +1,74 @@
+name: Release APKs to GitHub Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Nom du tag de la release (ex: v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  push:
+    tags:
+      - 'v*' # Déclenche automatiquement le build et la release dès qu'un tag du type v1.0.0 est poussé
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Indispensable pour autoriser GitHub Actions à créer une release et y attacher des fichiers
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build APKs (Debug & Release)
+        run: |
+          gradle app:assembleDebug --stacktrace
+          gradle app:assembleRelease --stacktrace
+
+      - name: Determine Tag Name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish Release and Upload APKs
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "CamaroDiag Gen5 - Release ${{ steps.tag.outputs.tag }}"
+          body: |
+            ## 🚗 CamaroDiag Gen5
+            Build automatisé pour les diagnostics OBD-II UDS (2010-2015 Chevrolet Camaro).
+            - **APK Debug** : Version de test et de diagnostic avec logs complets.
+            - **APK Release** : Version de production standard optimisée.
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
