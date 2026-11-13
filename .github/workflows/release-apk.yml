@@ -41,10 +41,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build APKs (Debug & Release)
+      - name: Decode Keystore
         run: |
-          gradle app:assembleDebug --stacktrace
-          gradle app:assembleRelease --stacktrace
+          mkdir -p app
+          echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
+
+      - name: Build APKs (Debug & Release)
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew app:assembleDebug --stacktrace
+          ./gradlew app:assembleRelease --stacktrace
 
       - name: Determine Tag Name
         id: tag
@@ -64,7 +74,7 @@ jobs:
             ## 🚗 CamaroDiag Gen5
             Build automatisé pour les diagnostics OBD-II UDS (2010-2015 Chevrolet Camaro).
             - **APK Debug** : Version de test et de diagnostic avec logs complets.
-            - **APK Release** : Version de production standard optimisée.
+            - **APK Release** : Version de production signée et optimisée.
           files: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
