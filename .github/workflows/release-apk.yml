@@ -47,7 +47,7 @@ jobs:
       - name: Decode Keystore
         run: |
           mkdir -p app
-          echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
+          printf "%s" "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
 
       - name: Generate Gradle Wrapper and Build APKs
         env:
