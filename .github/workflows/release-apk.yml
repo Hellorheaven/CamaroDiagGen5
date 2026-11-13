@@ -49,12 +49,16 @@ jobs:
           mkdir -p app
           echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
 
-      - name: Build APKs (Debug & Release)
+      - name: Generate Gradle Wrapper and Build APKs
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
+          # Génère dynamiquement le wrapper Gradle sur le runner
+          gradle wrapper --gradle-version 8.7
+          
+          # Rend le script exécutable et lance le build
           chmod +x gradlew
           ./gradlew app:assembleDebug --stacktrace
           ./gradlew app:assembleRelease --stacktrace
@@ -63,12 +67,9 @@ jobs:
         id: tag
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # Mode manuel : Utilise le préfixe saisi (ex: v1.0) et cherche le dernier patch ou met .0
             PREFIX="${{ github.event.inputs.version_prefix }}"
-            # Nettoie le préfixe si l'utilisateur a mis un 'v' ou non
             PREFIX_CLEAN=$(echo "$PREFIX" | sed 's/^v//')
             
-            # Trouve le dernier numéro de patch pour ce préfixe
             LAST_PATCH=$(git tag -l "v${PREFIX_CLEAN}.*" | sed "s/v${PREFIX_CLEAN}\.//" | sort -n | tail -n 1)
             if [ -z "$LAST_PATCH" ]; then
               NEXT_PATCH=0
@@ -79,13 +80,11 @@ jobs:
             echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
             
           else
-            # Mode automatique (sur push main) : Incrémente automatiquement le dernier tag v1.0.Y existant
             LAST_TAG=$(git describe --tags --match "v1.0.*" --abbrev=0 2>/dev/null || echo "v1.0.0")
             echo "Dernier tag détecté : $LAST_TAG"
             
-            # Extraction de la partie patch (Y)
-            PREFIX=$(echo "$LAST_TAG" | cut -d. -f1-2) # ex: v1.0
-            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)     # ex: 5
+            PREFIX=$(echo "$LAST_TAG" | cut -d. -f1-2)
+            PATCH=$(echo "$LAST_TAG" | cut -d. -f3)
             
             if [ -z "$PATCH" ]; then
               NEXT_PATCH=1
